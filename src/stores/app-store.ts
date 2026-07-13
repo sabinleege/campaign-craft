@@ -8,8 +8,13 @@ export interface Brand {
   tagline: string;
   logoUrl: string;
   primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
   font: string;
+  secondaryFont: string;
   toneOfVoice: string;
+  frequentPhrases: string;
+  language: string;
   website: string;
   industry: string;
   description: string;
