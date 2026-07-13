@@ -3,7 +3,7 @@ import { useAppStore } from "../stores/app-store";
 import { useHydrated } from "../hooks/use-hydrated-store";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Video, CalendarClock, Download, Plug, Package, Sparkles, ArrowRight, Palette } from "lucide-react";
+import { Video, CalendarClock, Download, Plug, Package, Sparkles, ArrowRight, Palette, ShieldAlert, FileEdit, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
