@@ -40,16 +40,37 @@ function Dashboard() {
 
   const published = campaigns.filter((c) => c.status === "published").length;
   const scheduled = campaigns.filter((c) => c.status === "scheduled").length;
+  const pending = campaigns.filter((c) => c.status === "pending_approval").length;
+  const drafts = campaigns.filter((c) => c.status === "draft").length;
   const downloads = campaigns.reduce((n, c) => n + c.downloads, 0);
   const connected = channels.filter((c) => c.connected).length;
 
   const stats = [
     { icon: Video, label: "Published", value: published },
     { icon: CalendarClock, label: "Scheduled", value: scheduled },
+    { icon: ShieldAlert, label: "Pending approval", value: pending, highlight: pending > 0 },
+    { icon: FileEdit, label: "Drafts", value: drafts },
     { icon: Download, label: "Video downloads", value: downloads },
     { icon: Plug, label: "Connected channels", value: `${connected}/${channels.length}` },
     { icon: Package, label: "Products", value: products.length },
   ];
+
+  const activity = campaigns
+    .slice()
+    .sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1))
+    .slice(0, 6)
+    .map((c) => {
+      const map: Record<string, string> = {
+        pending_approval: "is pending your review",
+        approved: "is approved and ready to publish",
+        scheduled: `is scheduled for ${c.scheduledFor ? new Date(c.scheduledFor).toLocaleString() : "later"}`,
+        published: "was published",
+        draft: "was saved as draft",
+        rejected: "was rejected",
+        generating: "is generating…",
+      };
+      return { id: c.id, name: c.name, text: map[c.status] ?? "was updated", status: c.status, when: c.createdAt };
+    });
 
   return (
     <div className="space-y-8">
@@ -64,10 +85,10 @@ function Dashboard() {
         </Link>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         {stats.map((s) => (
-          <Card key={s.label} className="p-4">
-            <s.icon className="h-5 w-5 text-primary" />
+          <Card key={s.label} className={`p-4 ${s.highlight ? "border-primary bg-accent/40" : ""}`}>
+            <s.icon className={`h-5 w-5 ${s.highlight ? "text-primary" : "text-primary"}`} />
             <div className="mt-3 text-2xl font-bold">{s.value}</div>
             <div className="text-xs text-muted-foreground">{s.label}</div>
           </Card>
