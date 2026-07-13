@@ -131,22 +131,68 @@ function Dashboard() {
               <div className="font-semibold">{brand.name}</div>
               <div className="text-xs text-muted-foreground">{brand.tagline}</div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg border border-border" style={{ backgroundColor: brand.primaryColor }} />
-              <div>
-                <div className="text-xs text-muted-foreground">Primary color</div>
-                <div className="font-mono text-sm">{brand.primaryColor}</div>
+            <div>
+              <div className="text-xs text-muted-foreground">Palette</div>
+              <div className="mt-1 flex gap-1 overflow-hidden rounded-md border border-border">
+                <div className="h-8 flex-1" style={{ backgroundColor: brand.primaryColor }} title={`Primary ${brand.primaryColor}`} />
+                <div className="h-8 flex-1" style={{ backgroundColor: brand.secondaryColor }} title={`Secondary ${brand.secondaryColor}`} />
+                <div className="h-8 flex-1" style={{ backgroundColor: brand.accentColor }} title={`Accent ${brand.accentColor}`} />
               </div>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Font</div>
-              <div className="text-sm">{brand.font}</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-xs text-muted-foreground">Fonts</div>
+                <div className="text-sm">{brand.font}{brand.secondaryFont && brand.secondaryFont !== brand.font ? ` · ${brand.secondaryFont}` : ""}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Language</div>
+                <div className="text-sm">{brand.language}</div>
+              </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Tone of voice</div>
               <div className="text-sm">{brand.toneOfVoice}</div>
             </div>
             <Link to="/brand" className="mt-2 inline-flex items-center text-xs font-medium text-primary hover:underline">Edit brand →</Link>
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-3">
+        <Card className="p-6 lg:col-span-2">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider">Recent activity</h2>
+          </div>
+          <div className="mt-4 divide-y divide-border">
+            {activity.length === 0 && <p className="py-6 text-sm text-muted-foreground">No activity yet.</p>}
+            {activity.map((a) => (
+              <Link key={a.id} to="/campaigns/$id" params={{ id: a.id }} className="flex items-center justify-between gap-3 py-3 text-sm hover:bg-muted/50 rounded-lg px-2 -mx-2">
+                <div className="min-w-0">
+                  <span className="font-medium">{a.name}</span>{" "}
+                  <span className="text-muted-foreground">{a.text}</span>
+                </div>
+                <Badge className={`${statusColor(a.status)} capitalize shrink-0`}>{statusLabel(a.status)}</Badge>
+              </Link>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider">Awaiting your review</h2>
+          </div>
+          <div className="mt-4 space-y-2">
+            {campaigns.filter((c) => c.status === "pending_approval").length === 0 && (
+              <p className="text-sm text-muted-foreground">Nothing pending. You're all caught up.</p>
+            )}
+            {campaigns.filter((c) => c.status === "pending_approval").map((c) => (
+              <Link key={c.id} to="/campaigns/$id" params={{ id: c.id }} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-accent/40 px-3 py-2 text-sm hover:border-primary">
+                <span className="truncate font-medium">{c.name}</span>
+                <span className="shrink-0 text-xs font-semibold text-primary">Review →</span>
+              </Link>
+            ))}
           </div>
         </Card>
       </section>
