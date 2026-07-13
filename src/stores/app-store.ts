@@ -8,8 +8,13 @@ export interface Brand {
   tagline: string;
   logoUrl: string;
   primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
   font: string;
+  secondaryFont: string;
   toneOfVoice: string;
+  frequentPhrases: string;
+  language: string;
   website: string;
   industry: string;
   description: string;
@@ -81,8 +86,13 @@ const seedBrand: Brand = {
   tagline: "Sustainable tech for everyday life",
   logoUrl: "",
   primaryColor: "#6C3CE1",
+  secondaryColor: "#22C55E",
+  accentColor: "#F59E0B",
   font: "Inter",
+  secondaryFont: "Inter",
   toneOfVoice: "Warm, confident, sustainability-forward",
+  frequentPhrases: "Drink better. Waste less.\nSmall choices, big impact.",
+  language: "English",
   website: "https://greentech.example.com",
   industry: "Consumer sustainability",
   description: "GreenTech designs everyday eco-friendly products that help households reduce waste without changing their lifestyle.",
