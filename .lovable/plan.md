@@ -1,50 +1,95 @@
-## VideoMark AI — Front-end V1 Plan
+# VideoMark AI v3.2 — Front-end upgrade plan
 
-Build a responsive, mock-data-driven front end for an AI marketing campaign platform. No backend calls in V1 — all "AI generation", rendering, and publishing simulated with timeouts + Zustand store. Approval gate is enforced structurally (Publish controls don't render until `campaign.status === 'approved'`).
+Scope: front-end only, mock data via existing Zustand store. No backend/OAuth wiring — Supabase upload noted as future work; for now product images use local `URL.createObjectURL` previews stored as data URLs in the store.
 
-### Design system (src/styles.css)
-- Primary `#6C3CE1` (oklch) + gradient token `--gradient-primary`.
-- Inter via Google Fonts `<link>` in `__root.tsx` head (never `@import` remote CSS).
-- Neutral surfaces, soft shadows, rounded-xl cards. Light mode only in V1.
-- Semantic tokens only — no hardcoded colors in components.
+## 1. Global navigation (all pages)
 
-### Routes (src/routes/)
-- `index.tsx` — Dashboard (stats, recent campaigns, quick actions, brand summary)
-- `brand.tsx` — Brand Setup (logo, colors, fonts, guidelines PDF, company info)
-- `products.tsx` — Product & Asset Library (list + search)
-- `products.$id.tsx` — Product edit/create form
-- `campaigns.new.tsx` — Campaign Generation (loading pipeline → unified preview with channel tabs)
-- `campaigns.$id.tsx` — Campaign detail: video pipeline view + approval gate + publish options
-- `channels.tsx` — Channel connections (Gmail, FB, IG, LinkedIn, X, TikTok, WhatsApp) with mock OAuth
-- `analytics.tsx` — Metrics + campaign history
+- Replace top `TopNav` with a **floating hovering menu bar** anchored top-center, translucent, subtle shadow, hover-expand.
+- Nav items: Dashboard, Products, Campaigns, Calendar, Analytics, Settings, Logout.
+- Keep only **Generate Campaign** as a distinct pill on the right of the floating bar.
+- Add a **sticky bottom bar** (mobile + desktop) with a big "Generate Campaign" CTA.
+- Move brand/company name from page headers into the floating bar (left cluster).
+- Remove old dashboard/page headers that duplicated the company name.
 
-Shared layout via `__root.tsx`: top bar with logo + nav links + brand badge.
+Files: `src/components/layout/TopNav.tsx` (rewrite as `FloatingNav.tsx`), new `BottomGenerateBar.tsx`, update `src/routes/__root.tsx`.
 
-### State (Zustand)
-`src/stores/app-store.ts` holds: `brand`, `products[]`, `campaigns[]`, `channels[]`. Persisted to localStorage (read in `useEffect` to avoid hydration mismatch). Seeded with mock data: brand "GreenTech" (purple), product "EcoBottle", campaign "Summer Sale 2026" pre-generated.
+## 2. Dashboard
 
-### Components (src/components/)
-- `Layout/TopNav.tsx`
-- `Dashboard/StatCard.tsx`, `RecentCampaigns.tsx`, `BrandSummary.tsx`
-- `Campaign/GenerationPipeline.tsx` (animated step progress)
-- `Campaign/ChannelPreviewTabs.tsx` (Video / Email / Social / WhatsApp / Blog / Landing)
-- `Campaign/VideoPipeline.tsx` (Script → VO → HyperFrames → Captions → Music → Branding → Render)
-- `Campaign/ApprovalGate.tsx` — big banner; renders Edit + Approve/Reject; Publish panel only appears post-approval
-- `Campaign/PublishPanel.tsx` (Publish now / Schedule with date-time / Save draft)
-- `Channels/ChannelCard.tsx`
-- `Products/ProductForm.tsx` (react-hook-form)
+- Company name + tagline hero strip (from brand memory).
+- Marketing goals card: three progress bars (Awareness, Leads, Sales) with editable targets stored in brand memory.
+- "Today" panel: today's scheduled actions from the calendar.
+- Unified analytics graphs (recharts, already available via shadcn or add if missing):
+  - Viewership & engagement (line)
+  - Published campaigns over time (bar)
+  - Email delivery (bar, where connected)
+  - Video downloads (line)
+  - Social publishing status (stacked bar per network)
+  - Scheduled vs published (area)
+- Recent activity feed retained; remove the old 5-stat row.
 
-### Approval gate (non-negotiable)
-`PublishPanel` is conditionally rendered on `status === 'approved'`. Before approval, only an "Awaiting approval" banner shows. Edits are inline (contentEditable / textarea) and update store; approve action flips status and unlocks publish.
+Files: `src/routes/index.tsx` rewrite; add `src/components/dashboard/GoalsCard.tsx`, `AnalyticsGraphs.tsx`.
 
-### Mocking
-- `src/lib/mock-generate.ts` — async fn returning full campaign assets after staggered `setTimeout`s emitting pipeline progress.
-- Toast feedback via `sonner`.
-- Video preview: HTML5 `<video>` with a sample mp4 URL (or poster-only placeholder if no CDN).
+## 3. Products
 
-### Tech
-- TanStack Start (existing), TanStack Router, TanStack Query not needed (local store), Zustand, react-hook-form, sonner, lucide-react icons, framer-motion for pipeline animation.
-- Add deps: `zustand react-hook-form framer-motion sonner`.
+- Rich form: name, description, URL, pricing, discount %, tags, features, variants (repeatable rows: label + value), custom fields (repeatable key/value), multiple image uploads (drag-drop, preview grid, reorder, remove).
+- Images stored as data URLs in the store (Supabase upload flagged as TODO comment).
+- Product list card shows first image, price, discount badge.
 
-### Out of scope for V1
-Real OAuth, real AI calls, real publishing, real analytics data, auth/multi-user, dark mode toggle.
+Files: `src/routes/products.$id.tsx` rewrite; `src/routes/products.tsx` card update; extend `Product` type in `app-store.ts` (add `url`, `discountPercent`, `variants`, `customFields`).
+
+## 4. Campaign generation — preview-first flow
+
+New wizard in `src/routes/campaigns.new.tsx`:
+
+1. **Setup**: name, product, marketing goal, format (Video / Poster-only / Both), video length (15s/30s/60s/90s), voice option (Generate w/ Google TTS · Upload own mp3 · No voice), CTA selection.
+2. **Preview** (before any rendering): show script, storyboard frames, poster mockups, captions, social copy, email copy. Inline edit. Buttons: Regenerate section · Approve & Generate.
+3. **Generate**: existing animated pipeline runs only after approval.
+4. **Result**: navigates to campaign detail.
+
+Files: `src/routes/campaigns.new.tsx` rewrite; `src/lib/mock-generate.ts` add `generatePreview()` returning draft assets fast (no video render).
+
+## 5. Campaign calendar
+
+New route `src/routes/calendar.tsx`:
+
+- Month grid, each day clickable.
+- Day detail drawer: list of planned posts (poster/video/email/social) with Auto / Manual toggle per day.
+- "AI plan my week" button — mock fills next 7 days with scheduled items.
+- Special-day awareness: predefined dates (Women's Day, Genocide Remembrance, etc.) show a themed suggestion banner and one-click "Craft themed post".
+- Data persisted in store as `calendarPlan: Record<dateISO, PlannedItem[]>`.
+
+Files: `src/routes/calendar.tsx`, `src/components/calendar/DayDrawer.tsx`, extend store with `calendarPlan`, `marketingGoals`, `specialDays` seed.
+
+## 6. Analytics
+
+- Remove the old 6-stat row. Redirect to Dashboard graphs OR keep as deep-dive with the same graphs + campaign history table (kept) and Drafts/Scheduled/Published/Pending filters.
+
+Files: `src/routes/analytics.tsx` simplified to campaign history + filter tabs.
+
+## 7. Brand Memory (Settings)
+
+Rename route label to **Settings**; keep `/brand` path.
+
+- Sections (each with its own Save): Identity, Visuals (primary/secondary/accent + fonts), Voice & Language (tone, phrases, language), Company, Marketing Goals (targets), Preferred CTAs (repeatable list).
+- Store additions: `preferredCtas: string[]`, `marketingGoals: { awareness, leads, sales, targets }`.
+
+Files: `src/routes/brand.tsx` extend; store extend.
+
+## 8. Campaign detail
+
+- Show company name badge at top.
+- Approval gate stays; after approval reveal Publish/Schedule/AI-plan buttons.
+- Add "Add to calendar" action that writes into `calendarPlan`.
+
+Files: `src/routes/campaigns.$id.tsx` small additions.
+
+## Technical notes
+
+- Add `recharts` if missing (`bun add recharts`).
+- All new store fields seeded so existing localStorage users get merged defaults via a small migration in the persist `onRehydrateStorage`.
+- Logout button is a no-op that clears store + toast (no auth in v1).
+- Keep all styling via semantic tokens in `styles.css`; floating nav uses `bg-background/70 backdrop-blur border border-border/60 shadow-elegant rounded-full`.
+
+## Out of scope (flagged as TODO in code)
+
+- Real Supabase image upload, real Google TTS, real OAuth posting, real AI scheduling, auth/logout.
