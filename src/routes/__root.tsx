@@ -11,7 +11,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { TopNav } from "../components/layout/TopNav";
+import { FloatingNav, BottomGenerateBar } from "../components/layout/FloatingNav";
 
 function NotFoundComponent() {
   return (
@@ -82,10 +82,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gradient-subtle">
-        <TopNav />
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <FloatingNav />
+        <main className="mx-auto max-w-7xl px-4 pb-28 pt-24 sm:px-6 lg:px-8">
           <Outlet />
         </main>
+        <BottomGenerateBar />
       </div>
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
