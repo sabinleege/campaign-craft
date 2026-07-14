@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as ChannelsRouteImport } from './routes/channels'
+import { Route as CampaignsRouteImport } from './routes/campaigns'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BrandRouteImport } from './routes/brand'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -26,6 +28,16 @@ const ProductsRoute = ProductsRouteImport.update({
 const ChannelsRoute = ChannelsRouteImport.update({
   id: '/channels',
   path: '/channels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampaignsRoute = CampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrandRoute = BrandRouteImport.update({
@@ -49,20 +61,22 @@ const ProductsIdRoute = ProductsIdRouteImport.update({
   getParentRoute: () => ProductsRoute,
 } as any)
 const CampaignsNewRoute = CampaignsNewRouteImport.update({
-  id: '/campaigns/new',
-  path: '/campaigns/new',
-  getParentRoute: () => rootRouteImport,
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CampaignsRoute,
 } as any)
 const CampaignsIdRoute = CampaignsIdRouteImport.update({
-  id: '/campaigns/$id',
-  path: '/campaigns/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => CampaignsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/brand': typeof BrandRoute
+  '/calendar': typeof CalendarRoute
+  '/campaigns': typeof CampaignsRouteWithChildren
   '/channels': typeof ChannelsRoute
   '/products': typeof ProductsRouteWithChildren
   '/campaigns/$id': typeof CampaignsIdRoute
@@ -73,6 +87,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/brand': typeof BrandRoute
+  '/calendar': typeof CalendarRoute
+  '/campaigns': typeof CampaignsRouteWithChildren
   '/channels': typeof ChannelsRoute
   '/products': typeof ProductsRouteWithChildren
   '/campaigns/$id': typeof CampaignsIdRoute
@@ -84,6 +100,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/brand': typeof BrandRoute
+  '/calendar': typeof CalendarRoute
+  '/campaigns': typeof CampaignsRouteWithChildren
   '/channels': typeof ChannelsRoute
   '/products': typeof ProductsRouteWithChildren
   '/campaigns/$id': typeof CampaignsIdRoute
@@ -96,6 +114,8 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/brand'
+    | '/calendar'
+    | '/campaigns'
     | '/channels'
     | '/products'
     | '/campaigns/$id'
@@ -106,6 +126,8 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/brand'
+    | '/calendar'
+    | '/campaigns'
     | '/channels'
     | '/products'
     | '/campaigns/$id'
@@ -116,6 +138,8 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/brand'
+    | '/calendar'
+    | '/campaigns'
     | '/channels'
     | '/products'
     | '/campaigns/$id'
@@ -127,10 +151,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   BrandRoute: typeof BrandRoute
+  CalendarRoute: typeof CalendarRoute
+  CampaignsRoute: typeof CampaignsRouteWithChildren
   ChannelsRoute: typeof ChannelsRoute
   ProductsRoute: typeof ProductsRouteWithChildren
-  CampaignsIdRoute: typeof CampaignsIdRoute
-  CampaignsNewRoute: typeof CampaignsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -147,6 +171,20 @@ declare module '@tanstack/react-router' {
       path: '/channels'
       fullPath: '/channels'
       preLoaderRoute: typeof ChannelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campaigns': {
+      id: '/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof CampaignsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/brand': {
@@ -179,20 +217,34 @@ declare module '@tanstack/react-router' {
     }
     '/campaigns/new': {
       id: '/campaigns/new'
-      path: '/campaigns/new'
+      path: '/new'
       fullPath: '/campaigns/new'
       preLoaderRoute: typeof CampaignsNewRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CampaignsRoute
     }
     '/campaigns/$id': {
       id: '/campaigns/$id'
-      path: '/campaigns/$id'
+      path: '/$id'
       fullPath: '/campaigns/$id'
       preLoaderRoute: typeof CampaignsIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CampaignsRoute
     }
   }
 }
+
+interface CampaignsRouteChildren {
+  CampaignsIdRoute: typeof CampaignsIdRoute
+  CampaignsNewRoute: typeof CampaignsNewRoute
+}
+
+const CampaignsRouteChildren: CampaignsRouteChildren = {
+  CampaignsIdRoute: CampaignsIdRoute,
+  CampaignsNewRoute: CampaignsNewRoute,
+}
+
+const CampaignsRouteWithChildren = CampaignsRoute._addFileChildren(
+  CampaignsRouteChildren,
+)
 
 interface ProductsRouteChildren {
   ProductsIdRoute: typeof ProductsIdRoute
@@ -210,10 +262,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   BrandRoute: BrandRoute,
+  CalendarRoute: CalendarRoute,
+  CampaignsRoute: CampaignsRouteWithChildren,
   ChannelsRoute: ChannelsRoute,
   ProductsRoute: ProductsRouteWithChildren,
-  CampaignsIdRoute: CampaignsIdRoute,
-  CampaignsNewRoute: CampaignsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
