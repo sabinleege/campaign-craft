@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { useAppStore, type Product } from "../stores/app-store";
+import { useAppStore, type Product, type ProductVariant, type ProductCustomField } from "../stores/app-store";
 import { useHydrated } from "../hooks/use-hydrated-store";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -8,8 +8,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
-import { useEffect } from "react";
-import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Trash2, Upload, X, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/products/$id")({
   head: () => ({ meta: [{ title: "Edit product — VideoMark AI" }] }),
@@ -19,10 +19,12 @@ export const Route = createFileRoute("/products/$id")({
 interface FormShape {
   name: string;
   description: string;
+  url?: string;
   features: string;
   benefits: string;
   audience: string;
   price?: string;
+  discountPercent?: number;
   tags: string;
   faqs: string;
 }
@@ -40,21 +42,45 @@ function ProductEditPage() {
     defaultValues: toForm(product),
   });
 
-  useEffect(() => { if (hydrated) reset(toForm(product)); }, [hydrated, product, reset]);
+  const [images, setImages] = useState<string[]>(product?.imageUrls ?? []);
+  const [variants, setVariants] = useState<ProductVariant[]>(product?.variants ?? []);
+  const [customFields, setCustomFields] = useState<ProductCustomField[]>(product?.customFields ?? []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    reset(toForm(product));
+    setImages(product?.imageUrls ?? []);
+    setVariants(product?.variants ?? []);
+    setCustomFields(product?.customFields ?? []);
+  }, [hydrated, product, reset]);
 
   if (!hydrated) return <div className="h-64 animate-pulse rounded-xl bg-muted" />;
+
+  const onFiles = (files: FileList | null) => {
+    if (!files) return;
+    // TODO: upload to Supabase storage; for now store as data URLs in local state
+    Array.from(files).forEach((f) => {
+      const reader = new FileReader();
+      reader.onload = () => setImages((prev) => [...prev, String(reader.result)]);
+      reader.readAsDataURL(f);
+    });
+  };
 
   const onSubmit = (data: FormShape) => {
     const p: Product = {
       id: isNew ? `prod_${Date.now()}` : id,
       name: data.name,
       description: data.description,
+      url: data.url,
       features: splitLines(data.features),
       benefits: splitLines(data.benefits),
       audience: data.audience,
       price: data.price,
+      discountPercent: data.discountPercent ? Number(data.discountPercent) : undefined,
       tags: data.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      imageUrls: product?.imageUrls ?? [],
+      imageUrls: images,
+      variants: variants.filter((v) => v.label || v.value),
+      customFields: customFields.filter((c) => c.key || c.value),
       faqs: parseFaqs(data.faqs),
     };
     upsert(p);
@@ -73,31 +99,79 @@ function ProductEditPage() {
         )}
       </header>
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 lg:grid-cols-3">
-        <Card className="p-6 space-y-4 lg:col-span-2">
+        <Card className="space-y-4 p-6 lg:col-span-2">
           <div><Label>Name</Label><Input {...register("name", { required: true })} /></div>
+          <div><Label>Product URL</Label><Input {...register("url")} placeholder="https://…" /></div>
           <div><Label>Description</Label><Textarea rows={3} {...register("description")} /></div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div><Label>Price</Label><Input {...register("price")} placeholder="$29" /></div>
+            <div><Label>Discount %</Label><Input type="number" min={0} max={100} {...register("discountPercent")} placeholder="10" /></div>
+            <div><Label>Audience</Label><Input {...register("audience")} /></div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div><Label>Features (one per line)</Label><Textarea rows={4} {...register("features")} /></div>
             <div><Label>Benefits (one per line)</Label><Textarea rows={4} {...register("benefits")} /></div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div><Label>Target audience</Label><Input {...register("audience")} /></div>
-            <div><Label>Price (optional)</Label><Input {...register("price")} placeholder="$29" /></div>
-          </div>
+
           <div><Label>Tags (comma-separated)</Label><Input {...register("tags")} /></div>
+
+          <RepeatableList
+            label="Variants"
+            items={variants}
+            onChange={setVariants}
+            fields={["label", "value"]}
+            placeholders={["Color", "Forest / Midnight / Sand"]}
+            empty={{ label: "", value: "" }}
+          />
+
+          <RepeatableList
+            label="Custom fields"
+            items={customFields}
+            onChange={setCustomFields}
+            fields={["key", "value"]}
+            placeholders={["Warranty", "Lifetime"]}
+            empty={{ key: "", value: "" }}
+          />
+
           <div>
             <Label>FAQs (Q: … / A: …, blank line between)</Label>
             <Textarea rows={5} {...register("faqs")} placeholder={"Q: Is it dishwasher safe?\nA: Yes, top-rack safe."} />
           </div>
         </Card>
-        <Card className="p-6 space-y-3">
-          <h2 className="font-semibold">Media</h2>
-          <div className="grid h-40 place-items-center rounded-xl border-2 border-dashed border-border text-xs text-muted-foreground">
-            Drop images / videos / PDFs (mock)
-          </div>
-          <p className="text-xs text-muted-foreground">Any uploaded file becomes a reusable asset for future campaigns.</p>
+
+        <Card className="space-y-3 p-6">
+          <h2 className="font-semibold">Images</h2>
+          <label className="grid h-32 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-border bg-muted/40 text-xs text-muted-foreground hover:border-primary hover:bg-accent/40">
+            <div className="flex flex-col items-center gap-1">
+              <Upload className="h-5 w-5" />
+              <span>Drop or click to upload</span>
+              <span className="text-[10px]">multiple images ok</span>
+            </div>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
+          </label>
+          {images.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {images.map((src, i) => (
+                <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
+                  <img src={src} alt={`Product ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-background/90 opacity-0 shadow transition-opacity group-hover:opacity-100"
+                    aria-label="Remove image"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground">Images are stored in your browser for this demo. Cloud upload can be wired later.</p>
         </Card>
-        <div className="lg:col-span-3 flex justify-end gap-2">
+
+        <div className="flex justify-end gap-2 lg:col-span-3">
           <Button type="button" variant="outline" onClick={() => nav({ to: "/products" })}>Cancel</Button>
           <Button type="submit" className="bg-gradient-primary shadow-elegant">Save product</Button>
         </div>
@@ -106,14 +180,60 @@ function ProductEditPage() {
   );
 }
 
+function RepeatableList<T extends Record<string, string>>({
+  label, items, onChange, fields, placeholders, empty,
+}: {
+  label: string;
+  items: T[];
+  onChange: (next: T[]) => void;
+  fields: (keyof T & string)[];
+  placeholders: string[];
+  empty: T;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <Label>{label}</Label>
+        <Button type="button" size="sm" variant="ghost" onClick={() => onChange([...items, { ...empty }])}>
+          <Plus className="mr-1 h-3 w-3" /> Add
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {items.map((it, i) => (
+          <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            {fields.map((f, j) => (
+              <Input
+                key={f}
+                placeholder={placeholders[j]}
+                value={it[f] ?? ""}
+                onChange={(e) => {
+                  const next = items.slice();
+                  next[i] = { ...next[i], [f]: e.target.value };
+                  onChange(next);
+                }}
+              />
+            ))}
+            <Button type="button" size="icon" variant="ghost" onClick={() => onChange(items.filter((_, j) => j !== i))}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-xs text-muted-foreground">None yet.</p>}
+      </div>
+    </div>
+  );
+}
+
 function toForm(p?: Product): FormShape {
   return {
     name: p?.name ?? "",
     description: p?.description ?? "",
+    url: p?.url ?? "",
     features: p?.features.join("\n") ?? "",
     benefits: p?.benefits.join("\n") ?? "",
     audience: p?.audience ?? "",
     price: p?.price ?? "",
+    discountPercent: p?.discountPercent,
     tags: p?.tags.join(", ") ?? "",
     faqs: p?.faqs.map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n") ?? "",
   };

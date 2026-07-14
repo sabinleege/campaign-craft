@@ -295,7 +295,7 @@ export const useAppStore = create<AppState>()(
         // Merge missing fields from seed defaults for older stored state
         const p = (persisted ?? {}) as Partial<AppState>;
         const brand: Brand = { ...seedBrand, ...(p.brand ?? {}), marketingGoals: { ...seedBrand.marketingGoals, ...((p.brand as Brand | undefined)?.marketingGoals ?? {}) }, preferredCtas: (p.brand as Brand | undefined)?.preferredCtas ?? seedBrand.preferredCtas };
-        const products = (p.products ?? seedProducts).map((pr) => ({ variants: [], customFields: [], imageUrls: [], ...pr }));
+        const products = (p.products ?? seedProducts).map((pr) => ({ ...pr, variants: pr.variants ?? [], customFields: pr.customFields ?? [], imageUrls: pr.imageUrls ?? [] }));
         return { ...p, brand, products, calendarPlan: p.calendarPlan ?? {} } as AppState;
       },
     }
