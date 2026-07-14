@@ -21,14 +21,15 @@ export const VIDEO_PIPELINE_STEPS: GenStep[] = [
   { key: "render", label: "Render" },
 ];
 
-export function generateMockAssets(product: Product, brand: Brand, name: string): CampaignAssets {
+export function generateMockAssets(product: Product, brand: Brand, name: string, cta?: string): CampaignAssets {
   const p = product.name;
+  const finalCta = cta || `Shop ${p}`;
   return {
     strategy: `Position ${p} as the leading choice for ${product.audience}. Emphasize ${product.features.slice(0, 2).join(" and ")}. Multi-channel launch aligned with ${brand.name}'s ${brand.toneOfVoice.toLowerCase()} voice.`,
-    script: `[Scene 1] Hook — introduce the problem ${p} solves.\n[Scene 2] Show ${p} in action.\n[Scene 3] Highlight: ${product.features.slice(0, 3).join(", ")}.\n[Scene 4] Call to action: ${name}.`,
+    script: `[Scene 1] Hook — introduce the problem ${p} solves.\n[Scene 2] Show ${p} in action.\n[Scene 3] Highlight: ${product.features.slice(0, 3).join(", ")}.\n[Scene 4] Call to action: ${finalCta}.`,
     storyboard: ["Hook shot", "Product in context", "Feature close-ups", "Brand hero shot"],
     captions: `Meet ${p} — ${product.features[0] ?? "built for you"}.`,
-    cta: `Learn more — ${name}`,
+    cta: finalCta,
     socialPosts: [
       { network: "facebook", text: `${p} is here. ${product.benefits[0] ?? ""} ${name} is live.`, hashtags: `#${brand.name} #${p.replace(/\s+/g, "")}` },
       { network: "instagram", text: `${product.benefits[0] ?? p} ✨`, hashtags: `#${p.replace(/\s+/g, "")} #${brand.name}` },
@@ -54,9 +55,15 @@ export function generateMockAssets(product: Product, brand: Brand, name: string)
   };
 }
 
-export async function runGeneration(onStep: (idx: number) => void, delayMs = 700): Promise<void> {
+export async function runGeneration(onStep: (idx: number) => void, delayMs = 550): Promise<void> {
   for (let i = 0; i < GENERATION_STEPS.length; i++) {
     await new Promise((r) => setTimeout(r, delayMs));
     onStep(i);
   }
+}
+
+/** Fast preview: returns copy-only assets (no rendered video). */
+export async function generatePreview(product: Product, brand: Brand, name: string, cta?: string): Promise<CampaignAssets> {
+  await new Promise((r) => setTimeout(r, 900));
+  return generateMockAssets(product, brand, name, cta);
 }

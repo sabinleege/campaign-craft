@@ -9,7 +9,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { Upload, Palette, Save } from "lucide-react";
+import { Upload, Palette, Save, Target, Megaphone, Plus, X } from "lucide-react";
 
 export const Route = createFileRoute("/brand")({
   head: () => ({
@@ -154,11 +154,64 @@ function BrandPage() {
           </div>
         </Card>
 
+        <GoalsAndCtasCard />
+
         <div className="lg:col-span-3 flex justify-end">
           <Button type="submit" className="bg-gradient-primary shadow-elegant"><Save className="mr-2 h-4 w-4" /> Save Brand Memory</Button>
         </div>
       </form>
     </div>
+  );
+}
+
+function GoalsAndCtasCard() {
+  const brand = useAppStore((s) => s.brand);
+  const setBrand = useAppStore((s) => s.setBrand);
+  const setGoals = useAppStore((s) => s.setMarketingGoals);
+  const [ctas, setCtas] = useState<string[]>(brand.preferredCtas);
+  const [newCta, setNewCta] = useState("");
+  useEffect(() => { setCtas(brand.preferredCtas); }, [brand.preferredCtas]);
+  const save = () => { setBrand({ preferredCtas: ctas }); toast.success("Preferences saved"); };
+  return (
+    <Card className="p-6 lg:col-span-3 space-y-6">
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><Target className="h-4 w-4 text-primary" /><h2 className="font-semibold">Marketing goals</h2></div>
+          <Button type="button" size="sm" variant="outline" onClick={save}><Save className="mr-1 h-3 w-3" /> Save</Button>
+        </div>
+        <div className="mt-3 grid gap-4 sm:grid-cols-3">
+          {(["awareness", "leads", "sales"] as const).map((k) => (
+            <div key={k}>
+              <Label className="capitalize">{k} — current / target</Label>
+              <div className="mt-1 flex gap-2">
+                <Input type="number" value={brand.marketingGoals[k]} onChange={(e) => setGoals({ [k]: Number(e.target.value) } as Partial<Brand["marketingGoals"]>)} />
+                <Input type="number" value={brand.marketingGoals[`${k}Target` as const]} onChange={(e) => setGoals({ [`${k}Target`]: Number(e.target.value) } as Partial<Brand["marketingGoals"]>)} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /><h2 className="font-semibold">Preferred calls-to-action</h2></div>
+          <Button type="button" size="sm" variant="outline" onClick={save}><Save className="mr-1 h-3 w-3" /> Save</Button>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {ctas.map((c, i) => (
+            <span key={i} className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-xs">
+              {c}
+              <button type="button" onClick={() => setCtas(ctas.filter((_, j) => j !== i))}><X className="h-3 w-3" /></button>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 flex gap-2">
+          <Input value={newCta} onChange={(e) => setNewCta(e.target.value)} placeholder="Add a CTA (e.g. Shop now)" />
+          <Button type="button" size="sm" onClick={() => { if (!newCta.trim()) return; setCtas([...ctas, newCta.trim()]); setNewCta(""); }}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 }
 
