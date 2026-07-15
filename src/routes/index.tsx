@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { Progress } from "../components/ui/progress";
 import { Sparkles, ShieldAlert, Palette, Activity, Plug, Package, TrendingUp, Target } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from "recharts";
+import { DashboardCalendar } from "../components/dashboard/DashboardCalendar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -112,6 +113,9 @@ function Dashboard() {
           </div>
         </Card>
       </section>
+
+      {/* Calendar */}
+      <DashboardCalendar />
 
       {/* Analytics graphs */}
       <section className="grid gap-6 lg:grid-cols-2">

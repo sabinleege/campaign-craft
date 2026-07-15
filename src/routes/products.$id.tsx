@@ -38,9 +38,10 @@ function ProductEditPage() {
   const del = useAppStore((s) => s.deleteProduct);
   const isNew = id === "new";
 
-  const { register, handleSubmit, reset } = useForm<FormShape>({
+  const { register, handleSubmit, reset, watch } = useForm<FormShape>({
     defaultValues: toForm(product),
   });
+  const live = watch();
 
   const [images, setImages] = useState<string[]>(product?.imageUrls ?? []);
   const [variants, setVariants] = useState<ProductVariant[]>(product?.variants ?? []);
@@ -169,6 +170,95 @@ function ProductEditPage() {
             </div>
           )}
           <p className="text-[11px] text-muted-foreground">Images are stored in your browser for this demo. Cloud upload can be wired later.</p>
+        </Card>
+
+        <Card className="p-6 lg:col-span-3">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold">Live preview</h2>
+              <p className="text-xs text-muted-foreground">This is how your product will appear across campaigns.</p>
+            </div>
+          </div>
+          <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+            <div className="space-y-2">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-muted/40">
+                {images[0] ? (
+                  <img src={images[0]} alt={live.name || "Product"} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full place-items-center text-muted-foreground">
+                    <Upload className="h-10 w-10 opacity-40" />
+                  </div>
+                )}
+                {live.discountPercent ? (
+                  <span className="absolute left-2 top-2 rounded-md bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">-{live.discountPercent}%</span>
+                ) : null}
+                {live.price && (
+                  <span className="absolute right-2 top-2 rounded-md bg-background/90 px-2 py-0.5 text-[10px] font-semibold shadow">{live.price}</span>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div className="grid grid-cols-4 gap-1">
+                  {images.slice(1, 5).map((src, i) => (
+                    <div key={i} className="aspect-square overflow-hidden rounded-md border border-border">
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xl font-bold">{live.name || "Untitled product"}</h3>
+              {live.audience && <p className="text-[11px] uppercase tracking-widest text-muted-foreground">For {live.audience}</p>}
+              <p className="text-sm text-muted-foreground">{live.description || "Add a description to see it here…"}</p>
+
+              {splitLines(live.features || "").length > 0 && (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Features</div>
+                  <ul className="mt-1 grid gap-1 text-sm sm:grid-cols-2">
+                    {splitLines(live.features).map((f, i) => (
+                      <li key={i} className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {splitLines(live.benefits || "").length > 0 && (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Benefits</div>
+                  <ul className="mt-1 grid gap-1 text-sm sm:grid-cols-2">
+                    {splitLines(live.benefits).map((f, i) => (
+                      <li key={i} className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-success" />{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {variants.filter((v) => v.label || v.value).length > 0 && (
+                <div className="grid gap-1 text-sm">
+                  {variants.filter((v) => v.label || v.value).map((v, i) => (
+                    <div key={i}><span className="text-muted-foreground">{v.label}:</span> {v.value}</div>
+                  ))}
+                </div>
+              )}
+              {customFields.filter((c) => c.key || c.value).length > 0 && (
+                <div className="grid gap-1 rounded-lg border border-border p-3 text-xs">
+                  {customFields.filter((c) => c.key || c.value).map((c, i) => (
+                    <div key={i} className="flex justify-between gap-4"><span className="text-muted-foreground">{c.key}</span><span className="font-medium">{c.value}</span></div>
+                  ))}
+                </div>
+              )}
+
+              {(live.tags || "").trim() && (
+                <div className="flex flex-wrap gap-1">
+                  {live.tags.split(",").map((t) => t.trim()).filter(Boolean).map((t) => (
+                    <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">#{t}</span>
+                  ))}
+                </div>
+              )}
+              {live.url && (
+                <a href={live.url} target="_blank" rel="noreferrer" className="inline-block text-xs font-medium text-primary hover:underline">Visit product page →</a>
+              )}
+            </div>
+          </div>
         </Card>
 
         <div className="flex justify-end gap-2 lg:col-span-3">

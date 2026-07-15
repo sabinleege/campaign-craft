@@ -1,6 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Sparkles, LayoutDashboard, Package, Megaphone, CalendarDays, BarChart3, Settings, LogOut, Menu, X } from "lucide-react";
-import { useState } from "react";
+import {
+  Sparkles, LayoutDashboard, Package, Megaphone, CalendarDays,
+  BarChart3, Settings, LogOut, Menu, X, Plug,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "../../stores/app-store";
 import { useHydrated } from "../../hooks/use-hydrated-store";
 import { toast } from "sonner";
@@ -11,6 +14,7 @@ const NAV = [
   { to: "/campaigns" as const, label: "Campaigns", Icon: Megaphone },
   { to: "/calendar" as const, label: "Calendar", Icon: CalendarDays },
   { to: "/analytics" as const, label: "Analytics", Icon: BarChart3 },
+  { to: "/channels" as const, label: "Channels", Icon: Plug },
   { to: "/brand" as const, label: "Settings", Icon: Settings },
 ];
 
@@ -21,111 +25,97 @@ export function FloatingNav() {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
 
+  // Close sidebar on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const doLogout = () => {
     resetAll();
     toast.success("Signed out — demo state reset");
+    setOpen(false);
     nav({ to: "/" });
   };
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-3">
-        <div className="pointer-events-auto flex w-full max-w-6xl items-center gap-2 rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-elegant backdrop-blur-xl transition-shadow hover:shadow-2xl">
-          <Link to="/" className="group flex items-center gap-2 pr-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary shadow-elegant transition-transform group-hover:scale-105">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div className="hidden flex-col leading-tight sm:flex">
-              <span className="text-xs font-bold tracking-tight">VideoMark AI</span>
-              <span className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
-                {hydrated ? brand.name : "Studio"}
-              </span>
-            </div>
-          </Link>
+      {/* Always-visible top-left toggle */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label={open ? "Close menu" : "Open menu"}
+        className="fixed left-3 top-3 z-[60] grid h-11 w-11 place-items-center rounded-xl border border-border/60 bg-background/80 text-foreground shadow-elegant backdrop-blur-xl transition-transform hover:scale-105"
+      >
+        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
 
-          <nav className="hidden flex-1 items-center justify-center gap-0.5 md:flex">
-            {NAV.map(({ to, label, Icon, exact }) => (
-              <Link
-                key={to}
-                to={to}
-                activeOptions={{ exact }}
-                activeProps={{ className: "bg-primary/10 text-primary" }}
-                inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-muted" }}
-                className="group flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all"
-              >
-                <Icon className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
-                <span className="hidden lg:inline">{label}</span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="ml-auto flex items-center gap-1.5">
-            <Link
-              to="/campaigns/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-elegant transition-transform hover:scale-[1.03]"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Generate Campaign</span>
-              <span className="sm:hidden">Generate</span>
-            </Link>
-            <button
-              onClick={doLogout}
-              title="Logout"
-              className="hidden h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground md:grid"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setOpen((o) => !o)}
-              className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
-              aria-label="Open menu"
-            >
-              {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
+      {/* Backdrop */}
       {open && (
-        <div className="fixed inset-x-3 top-20 z-40 rounded-2xl border border-border/60 bg-background/95 p-2 shadow-elegant backdrop-blur-xl md:hidden">
-          <div className="grid grid-cols-2 gap-1">
-            {NAV.map(({ to, label, Icon, exact }) => (
-              <Link
-                key={to}
-                to={to}
-                activeOptions={{ exact }}
-                onClick={() => setOpen(false)}
-                activeProps={{ className: "bg-primary/10 text-primary" }}
-                inactiveProps={{ className: "text-muted-foreground hover:bg-muted" }}
-                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium"
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-            <button
-              onClick={() => { setOpen(false); doLogout(); }}
-              className="col-span-2 mt-1 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted"
-            >
-              <LogOut className="h-4 w-4" /> Logout
-            </button>
+        <button
+          aria-hidden
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-background/40 backdrop-blur-sm"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center gap-2 border-b border-border/60 px-4 py-4 pl-16">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-primary shadow-elegant">
+            <Sparkles className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <div className="min-w-0 leading-tight">
+            <div className="text-sm font-bold tracking-tight">VideoMark AI</div>
+            <div className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
+              {hydrated ? brand.name : "Studio"}
+            </div>
           </div>
         </div>
-      )}
+
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {NAV.map(({ to, label, Icon, exact }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setOpen(false)}
+              activeOptions={{ exact }}
+              activeProps={{ className: "bg-primary/10 text-primary" }}
+              inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-muted" }}
+              className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all"
+            >
+              <Icon className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="border-t border-border/60 p-3">
+          <button
+            onClick={doLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" /> Logout
+          </button>
+        </div>
+      </aside>
     </>
   );
 }
 
 export function BottomGenerateBar() {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center px-3">
-      <Link
-        to="/campaigns/new"
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-2xl transition-transform hover:scale-[1.03]"
-      >
-        <Sparkles className="h-4 w-4" />
-        Generate Campaign
-      </Link>
-    </div>
+    <Link
+      to="/campaigns/new"
+      aria-label="Generate campaign"
+      title="Generate campaign"
+      className="fixed bottom-4 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-primary-foreground shadow-2xl transition-transform hover:scale-110"
+    >
+      <Sparkles className="h-6 w-6" />
+    </Link>
   );
 }
